@@ -1,0 +1,45 @@
+Word for word transcript of the StackExchange answer:
+
+Other sources seem to give different definitions of the larger kernels.
+ The Intel IPP library, for example, gives the 5x5 kernel as
+
+1  2 0  -2 -1
+4  8 0  -8 -4
+6 12 0 -12 -6
+4  8 0  -8 -4
+1  2 0  -2 -1
+
+Intuitively, this makes more sense to me because you're paying more attention to the elements closer to the centre.
+It also has a natural definition in terms of the 3x3 kernel which is easy to extend to generate larger kernels.
+ said, in my brief search I've found 3 different definitions of the 5x5 kernel -
+ so I suspect that (as Paul says) the larger kernels are ad hoc, and so this is by no means the definitive answer.
+
+The 3x3 kernel is the outer product of a smoothing kernel and a gradient kernel, in Matlab this is something like
+sob3x3 = [ 1 2 1 ]' * [1 0 -1]
+the larger kernels can be defined by convolving the 3x3 kernel with another smoothing kernel
+
+sob5x5 = conv2( [ 1 2 1 ]' * [1 2 1], sob3x3 )
+you can repeat the process to get progressively larger kernels
+
+sob7x7 = conv2( [ 1 2 1 ]' * [1 2 1], sob5x5 )
+sob9x9 = conv2( [ 1 2 1 ]' * [1 2 1], sob7x7 )
+...
+there are a lot of other ways of writing it, but I think this explains exactly what is happening best.
+Basically, you start off with a smoothing kernel in one direction and a finite differences estimate of the derivative
+in the other and then just apply smoothing until you get the kernel size you want.
+
+Because it's just a series of convolutions, all the nice properties hold, (commutativity, associativity and so forth)
+which might be useful for your implementation. For example, you can trivially separate the 5x5 kernel into its
+smoothing and derivative components:
+
+sob5x5 = conv([1 2 1],[1 2 1])' * conv([1 2 1],[-1 0 1])
+
+Note that in order to be a "proper" derivative estimator, the 3x3 Sobel should be scaled by a factor of 1/8:
+
+sob3x3 = 1/8 * [ 1 2 1 ]' * [1 0 -1]
+and each larger kernel needs to be scaled by an additional factor of 1/16 (because the smoothing kernels are
+not normalised):
+
+sob5x5 = 1/16 * conv2( [ 1 2 1 ]' * [1 2 1], sob3x3 )
+sob7x7 = 1/16 * conv2( [ 1 2 1 ]' * [1 2 1], sob5x5 )
+...
