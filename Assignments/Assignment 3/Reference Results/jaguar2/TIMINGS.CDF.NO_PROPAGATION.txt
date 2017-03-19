@@ -1,0 +1,48 @@
+wolf> python viscomp.py --disable-propagation --source ../test_images/jaguar2/source.png --target ../test_images/jaguar2/target.png --init-nnf ../results/jaguar2/jaguar2.init.npy --iters 9 --partial-results --nnf-image --nnf-vectors --rec-source --output ../results/jaguar2/jaguar2
+-----------------------------------------------------------------
+PatchMatch parameters:
+        Initial NNF:            ../results/jaguar2/jaguar2.init.npy
+        Iterations:             9
+        Patch size:             7
+        Alpha:                  0.5
+        W:                      630
+        Propagation enabled:    False
+        Random search enabled:  True
+Output path and base filename:  ../results/jaguar2/jaguar2
+Visualization parameters:
+        Output files:           correspondences, color nnf, rec'd source 
+        NNF subsampling:        100
+        NNF line width:         0.5
+        NNF line color:         r
+        Matplotlib server mode: False
+        Tmp directory:          ./
+-----------------------------------------------------------------
+Running iteration 1...
+        Function _propagation_and_random_search ran 21.7964
+        Function _reconstruct_source ran 0.0189
+Running iteration 2...
+        Function _propagation_and_random_search ran 20.7191
+        Function _reconstruct_source ran 0.0164
+Running iteration 3...
+        Function _propagation_and_random_search ran 20.8549
+        Function _reconstruct_source ran 0.0175
+Running iteration 4...
+        Function _propagation_and_random_search ran 20.5984
+        Function _reconstruct_source ran 0.0113
+Running iteration 5...
+        Function _propagation_and_random_search ran 20.5081
+        Function _reconstruct_source ran 0.0111
+Running iteration 6...
+        Function _propagation_and_random_search ran 20.4376
+        Function _reconstruct_source ran 0.0109
+Running iteration 7...
+        Function _propagation_and_random_search ran 20.6617
+        Function _reconstruct_source ran 0.0172
+Running iteration 8...
+        Function _propagation_and_random_search ran 20.4331
+        Function _reconstruct_source ran 0.0179
+Running iteration 9...
+        Function _propagation_and_random_search ran 20.3696
+        Function _reconstruct_source ran 0.0113
+        Function _reconstruct_source ran 0.0111
+Done.
