@@ -82,20 +82,7 @@ def propagation_and_random_search(source_patches, target_patches,
     ###  PLACE YOUR CODE BETWEEN THESE LINES  ###
     #############################################
 
-    # Compute D if it is not already provided for us
-    if best_D is None:
-        best_D = make_updated_D(f, source_patches, target_patches)
 
-    # Do propagation if we're asked to
-    if propagation_enabled:
-        new_f, best_D = propagation(f, best_D,
-                                    odd_iteration,
-                                    source_patches, target_patches)
-
-    # Do random search if we're asked to
-    if random_enabled:
-        new_f, best_D = random_search(w, alpha, f,
-                                      source_patches, target_patches)
 
     #############################################
 
@@ -421,19 +408,11 @@ def shift_arr(arr, shift_dir,
 
     return shifted
 
-# Wrapper function to create a matrix of
-# (y, x) - coordinates for a given array (only 2D coordinates):
+# Wrapper function to create a matrix of (y, x) - coordinates for a given array:
 def coords_of(arr):
     return make_coordinates_matrix(arr.shape[:2])
 
-# Inputs:
-#   w, alpha: described in paper
-#   NNF matrix
-#   Patches of source image
-#   Patches of target image
-# Outputs:
-#   NNF matrix updated according to the random search rule-set defined in section 3.2
-#   D-score matrix computed using the above NNF matrix
+# Helper for random search
 def random_search(w, alpha, NNF_matrix, src_patches, trg_patches):
     # NNF Matrix to return
     ret_NNF = NNF_matrix.copy()
@@ -470,10 +449,7 @@ def random_search(w, alpha, NNF_matrix, src_patches, trg_patches):
         # Update the D-matrix for the next iteration
         prev_D_mat = cur_D_mat
 
-    # Compute the D-score for the NNF we are about to return
-    final_D = make_updated_D(ret_NNF, src_patches, trg_patches)
-
-    return ret_NNF, final_D
+    return ret_NNF
 
 # Returns the number of iterations needed for w*alpha^i to decay to < 1:
 def num_iters_needed(w, alpha):
@@ -492,6 +468,7 @@ def uni_rand_like(arr, start, end):
     rng_len =  end - start
     rand_arr = np.random.random(size=arr.shape).astype(float)
     return (rand_arr * rng_len) + start
+
 
 # This function uses a computed NNF to reconstruct the source image
 # using pixels from the target image. The function takes two input
@@ -520,12 +497,6 @@ def reconstruct_source_from_target(target, f):
     ###  PLACE YOUR CODE BETWEEN THESE LINES  ###
     #############################################
 
-    # Matrix such that element [x, y] = (x, y) + f(x, y)
-    tgt_coords = targ_coords(f)
-
-    # Array of pixels where each pixel at [i,j] corresponds to the (supposed) NN pixel
-    # [i, j] + [x, y], where [x, y] is the NN vector for location [i, j]
-    rec_source = target.choose(tgt_coords) # exactly what we need
 
     #############################################
 
