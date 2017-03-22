@@ -178,33 +178,54 @@ def make_updated_D(NNF, src_patches, trg_patches):
 # Output:
 #   2D array of D-scores for each patch
 def compute_D(src_patches, trg_rearranged):
-    # Going to be using (squared euc-distance / valid area of patch)
-    # as measure of patch distance (division ensures that border patches aren't
-    # weighted less due to NANs)
-    # (avoiding rooting, it's costly and provides no additional benefit)
+    # Going to be using Mean Squares as measure of patch "distance"
+    # (not RMS, rooting is costly and does not change comparisons)
 
-    # Average the RGB for each pixel in target and source
-    # (average and flatten out the color channel (axis 2))
-    # Use nanmean to return NAN in the event that a pixel is all NANS (means it is outside)
-    src_avg = np.nanmean(src_patches, axis=2)
-    trg_avg = np.nanmean(trg_rearranged, axis=2)
-    # Last axis will now be the patch contents
+    # Flatten the color channel of the patched images
+    src_col_flat = color_flatten(src_patches)
+    trg_col_flat = color_flatten(trg_rearranged)
 
-    # Take the difference between the patch arrays and square it
-    sq_diff = (src_avg - trg_avg) ** 2
 
-    # Add the squared differences together inside each patch (use dot product of 1's)
-    # Use nansum to ignore NANs
+    # Take the difference between the flattened patch arrays and square it
+    sq_diff = (src_col_flat - trg_col_flat) ** 2
+
+    # Add the squared differences together inside each patch (use nansum to
+    # ignore NANs)
     patch_sums = np.nansum(sq_diff, axis=2)
 
-    # Figure out the valid area of each patch (number of non-nans)
-    unos = sq_diff / sq_diff # 1 where there are valid numbers, NAN where there are nans
-    patch_areas = np.nansum(unos, axis=2) # Number of non-nans per patch
+    # Valid area of each Sq-D patch (number of non-nans in each patch)
+    valid_area_matrix = non_nan_count_mat(sq_diff)
 
     # Divide the total by the total valid patch area (number of non-nans)
-    dist = patch_sums / patch_areas
+    # to get the Mean Square matrix
+    dist_mat = patch_sums / valid_area_matrix
 
-    return dist
+    return dist_mat
+
+# Input: patch array (dimensions NxMxCxP^2)
+# Output: 3D array of shape (N x M x CP^2) (color channel is "flattened" out)
+def color_flatten(patches):
+
+    # Fetching dimensions for brevity
+    N, M, C, patch_area = patches.shape
+
+    # Don't mess with the original
+    ret_arr = patches.copy().reshape((N, M, C * patch_area))
+
+    return ret_arr
+
+# Input: 3D array: Matrix of vectors - vectors may contain NAN values
+# Output: 2D arrayL: Matrix such that element [i,j] is the number of non-NAN values in vector [i, j]
+def non_nan_count_mat(patches):
+    # 1 where there are valid numbers, NAN where there are nans
+    unos = patches / patches
+
+    # Count number of non-nan values using nansum
+    patch_areas = np.nansum(unos, axis=2)
+
+    # What we want
+    return patch_areas
+
 
 # Input:
 #   NNF (as a matrix, every element is a 2-array)
