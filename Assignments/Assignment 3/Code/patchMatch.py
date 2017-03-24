@@ -48,6 +48,12 @@ def profile(fn):
 #####################################################################
 
 
+# Constants and Helpers for modularity
+# Used when an operation is unsuccessful
+unsuccessful = "unsuccessful"
+# Used when an operation is successful
+successful = "successful"
+
 class PatchMatch:
     #
     # The class constructor
@@ -104,15 +110,38 @@ class PatchMatch:
     # leave the matting instance's dictionary entry unaffected and return
     # False, along with an error message
     def read_image(self, filename, key):
-        success = False
-        msg = 'No Image Available'
+
+        # Format the error message for future use
+        msg = "Opening {filename} was ".format(filename=filename) + \
+              "{status}"
 
         #########################################
         ## PLACE YOUR CODE BETWEEN THESE LINES ##
         #########################################
 
-        # COPY INTO THIS SPACE YOUR IMPLEMENTATION OF THIS FUNCTION
-        # FROM YOUR algorithm.py of A1
+        # Try to open the image (default is 3-channel color, which is what we
+        # want to look at
+        img_ptr = cv.imread(filename)
+
+        # If img_ptr is None, the operation failed
+        if img_ptr is None:
+
+            # Set message and success as needed
+            success = False
+            msg = msg.format(status=unsuccessful)
+
+        # Otherwise the operation succeeded
+        else:
+            # Set message and success as needed
+            success = True
+            msg = msg.format(status=successful)
+
+            # Interpret the image as float array (easier to reason about)
+            scaled_img = img_ptr.astype(np.float32)
+
+            # Get the right key in the dictionary to point to the image's
+            # file pointer
+            self._images[key] = scaled_img
 
 
         #########################################
@@ -125,15 +154,44 @@ class PatchMatch:
     # The routine should return True if it succeeded. If it did not, it should
     # return False, along with an error message
     def write_image(self, filename, key):
-        success = False
-        msg = 'No Image Available'
+
+        # Make the message template for future use
+        msg = "Writing {key} to {filename} was".format(filename=filename,
+                                                       key=key) + \
+              " {status}"
 
         #########################################
         ## PLACE YOUR CODE BETWEEN THESE LINES ##
         #########################################
 
-        # COPY INTO THIS SPACE YOUR IMPLEMENTATION OF THIS FUNCTION
-        # FROM YOUR algorithm.py of A1
+        # Assigning image pointer to name
+        img_ptr = self._images[key]
+
+        # If the image doesn't exist, there's no way we can write it to
+        # anything
+        if img_ptr is None:
+            msg = msg.format(status=unsuccessful)
+            success = False
+
+        # If it isn't None we might be able to still write it to a file
+        else:
+
+            # According to my specification, the image is a bunch of
+            # floats, so convert to integers
+            scaled_intensities = np.round(img_ptr).astype(np.uint8)
+
+            # Try to save the image
+            write_attempt = cv.imwrite(filename, scaled_intensities)
+
+            # If write_attempt is False it didn't work
+            if not write_attempt:
+                msg = msg.format(status=unsuccessful)
+                success = False
+
+            # If write_attempt is True, it worked
+            else:
+                msg = msg.format(status=successful)
+                success = True
 
         #########################################
         return success, msg
