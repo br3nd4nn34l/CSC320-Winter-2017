@@ -32,6 +32,7 @@ def run_command(command_str):
 def running_at_home():
     return sys.platform == "win32"
 
+
 # Defining constants
 home_project_location = make_path(["G:", "Computer Science Work"])
 cdf_project_location = make_path([os.path.expanduser("~")])
@@ -53,7 +54,8 @@ def safe_lookup(dct, key):
         return dct[key]
 
 
-def make_cmd_string(vc_path, # Path to executable
+def make_cmd_string(py_path, # Path to python
+                    vc_path, # Path to executable
                     src, trg, out, # Image paths
                     iters=False, patch_size=False, alpha=False, w=False, # Numerical constants
                     init_NNF=False,
@@ -61,7 +63,8 @@ def make_cmd_string(vc_path, # Path to executable
                     nnf_img=False, part_res=False, nnf_vecs=False, rec_src=False, # NNF variables
                     nnf_ss=False, nnf_lw=False, nnf_lc=False,  # More NNF variables
                     MPL_serv=False, tmpdir=False):
-    exec_path = "python \"" + vc_path + "\" "
+
+    exec_path = """{py_name} \"{viscomp_path}\" """.format(py_name=py_path, viscomp_path=vc_path)
 
     return exec_path + create_cmd_args(src, trg, out, # Image paths
                     iters, patch_size, alpha, w, # Numerical constants
@@ -113,15 +116,21 @@ def create_associated_command(tag, value):
     return ret_str.format(tag=tag,
                           val=value)
 
+# Maps Location to Python Executable
+exec_map = {True:"""C:\ProgramData\Anaconda3\envs\python27\python.exe""",
+            False:"""/local/bin/X11/python"""}
+
 # Main program
 if __name__ == '__main__':
 
     # Figuring out the location of the A3 Folder
-    cur_CS_work_path = location_dict[running_at_home()]
+    at_home = running_at_home()
+    cur_CS_work_path = location_dict[at_home]
     A3_folder = make_path([cur_CS_work_path, "CSC320-Winter-2017",
                            "Assignments", "Assignment 3"])
     viscompPy_path = make_path([A3_folder, "Code", "viscomp.py"])
     testImgs_path = make_path([A3_folder, "test_images"])
+    python_path = exec_map[at_home]
 
     # Dictionary of test images to their folders
     imgs_to_paths = {
@@ -139,6 +148,7 @@ if __name__ == '__main__':
     # Dictionary of test names to their command strings
     test_dct = {
         "Jag2 NoProp":make_cmd_string(
+            python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
@@ -151,6 +161,7 @@ if __name__ == '__main__':
             rec_src=True),
 
         "Jag2 NoRand": make_cmd_string(
+            python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
@@ -163,6 +174,7 @@ if __name__ == '__main__':
             rec_src=True),
 
         "Jag2 All": make_cmd_string(
+            python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
@@ -175,8 +187,9 @@ if __name__ == '__main__':
             rec_src=True)
     }
 
-    # List of tests that are okay to run with the algorithm (because some actually can overload RAM or take forever)
-    okay_to_run = ["Jag2 All", "Jag2 NoRand"]
+    # List of tests that are okay to run with the algorithm
+    # (because some actually can overload RAM or take forever)
+    okay_to_run = ["Jag2 All"]
 
     for test in okay_to_run:
         run_command(test_dct[test])
