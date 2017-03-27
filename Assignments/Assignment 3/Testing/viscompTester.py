@@ -189,7 +189,7 @@ if __name__ == '__main__':
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["Jag2 All"]
+    okay_to_run = ["Jag2 All", "Jag2 NoRand", "Jag2 NoProp"]
 
     for test in okay_to_run:
         run_command(test_dct[test])

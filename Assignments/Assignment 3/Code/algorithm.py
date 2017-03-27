@@ -25,8 +25,8 @@ np.seterr(divide='ignore', invalid='ignore')
 # Global variables for modularity
 up,down,left,right = "u","d","l","r"
 flr, cel, rnd = np.floor, np.ceil, np.around
-import cv2 as cv, nnf
 
+"""ASSIGNED FUNCTIONS"""
 # This function implements the basic loop of the PatchMatch
 # algorithm, as explained in Section 3.2 of the paper.
 # The function takes an NNF f as input, performs propagation and random search,
@@ -140,7 +140,6 @@ def propagation_and_random_search(source_patches, target_patches,
         not propagation_disabled,
         not random_disabled
     )
-    write_accum()
 
     # Assign D values to appropriate pointer
     best_D = filled_D
@@ -148,58 +147,48 @@ def propagation_and_random_search(source_patches, target_patches,
     #############################################
 
     return filled_NN, best_D, global_vars
+# This function uses a computed NNF to reconstruct the source image
+# using pixels from the target image. The function takes two input
+# arguments
+#     - target: the target image that was used as input to PatchMatch
+#     - f:      the nearest-neighbor field the algorithm computed
+# and should return a reconstruction of the source image:
+#     - rec_source: an openCV image that has the same shape as the source image
+#
+# To reconstruct the source, the function copies to pixel (x,y) of the source
+# the color of pixel (x,y)+f(x,y) of the target.
+#
+# The goal of this routine is to demonstrate the quality of the computed NNF f.
+# Specifically, if patch (x,y)+f(x,y) in the target image is indeed very similar
+# to patch (x,y) in the source, then copying the color of target pixel (x,y)+f(x,y)
+# to the source pixel (x,y) should not change the source image appreciably.
+# If the NNF is not very high quality, however, the reconstruction of source image
+# will not be very good.
+#
+# You should use matrix/vector operations to avoid looping over pixels,
+# as this would be very inefficient
+def reconstruct_source_from_target(target, f):
+    rec_source = None
 
-img = np.zeros((285, 630), dtype=float)
-def accumulate_image(pos_arr):
-    img[split_yx(pos_arr)] += 1
+    #############################################
+    ###  PLACE YOUR CODE BETWEEN THESE LINES  ###
+    #############################################
 
-def write_accum():
-    print img
-    maximum = img.max()
-    cv.imwrite("Accum.tif", (img / maximum) * 255)
+    # Matrix such that element [x, y] = (x, y) + f(x, y)
+    tgt_coords = coords_of(f) + f
 
-# Function to conduct random search for some vector.
-# Inputs:
-#   pos: Origin position of the vector in question
-#   vec: some NN vector
-#   D_of_vec: the D-value of vec
-#   bound_matr: multi-dimensional array of pre-generated
-#       R_i values, one for each i, stacked on top of each other.
-#   src_patches: patches of the source image
-#   trg_patches: patches of the target image
-# Outputs:
-#   A vector with a better D-score and the corresponding D-value
-def rand_search(pos, vec, bound_matr, src_patches, trg_patches):
+    # Look up pixels in target
+    rec_source = lookup_values(target, tgt_coords)
 
-    # This is the target coordinate of vec
-    # (where v_0 in the paper ends up)
-    tgt_coord = vec + pos
+    #############################################
 
-    # Component bounds for vectors originating from tgt_coord
-    # First Axis: the i in R_i, Second Axis: bounds for that i
-    bounds = bound_matr[tgt_coord[0], tgt_coord[1], :, :].transpose()
+    return rec_source
+"""END OF ASSIGNED FUNCTIONS"""
 
-    # Random vectors that obey these bounds (this is is R_i * alpha ^ i * w)
-    obeying_y_comps = flt_to_int(np.random.uniform(low=bounds[:, 0], high=bounds[:, 2]), rnd)
-    obeying_x_comps = flt_to_int(np.random.uniform(low=bounds[:, 1], high=bounds[:, 3]), rnd)
-    obeying_vecs = np.stack((obeying_y_comps, obeying_x_comps), axis=-1)
-
-    # Where these vectors will end up, assuming they started at tgt_coord
-    final_locs = tgt_coord + obeying_vecs
-
-    # Vectors to get from the current position to the final location
-    # This is u_i in the paper (for every i)
-    ui_s = final_locs - pos
-
-    # Vectors to look at to minimize D
-    vecs = np.append(ui_s, np.array([vec]), axis=0)
-
-    # Now choose the best vector from vecs and the corresponding D-value
-    best_vec, best_D = best_vector(vecs, pos, src_patches, trg_patches)
-
-    return best_vec, best_D
-
-# Fill in the rest of a partial NNF created by partial_nnf
+"""FUNCTIONS THAT DEAL WITH FILLING IN THE NNF (PROPAGATION)"""
+# Fills in the rest of a partial NNF created by partial_nnf
+# The partial NNF must have it's top row and left column
+# filled in
 def fill_partial_nnf(partial_NNF, partial_D,
                      init_NNF, init_D,
                      bound_matr,
@@ -247,9 +236,6 @@ def fill_partial_nnf(partial_NNF, partial_D,
             # Update the values in the return matrix
             ret_NNF[row, col] = best_vec
             ret_D[row, col] = best_D
-        print "Done row {r}".format(r=row)
-
-    cv.imwrite("FilledNNF.tif", nnf.create_NNF_image(ret_NNF))
 
     return ret_NNF, ret_D
 
@@ -305,8 +291,6 @@ def partial_nnf(init_NNF, init_D,
         src_patches, trg_patches,
         prop_enabled, rand_enabled
     )
-
-    cv.imwrite("PartialNNF.tif", nnf.create_NNF_image(tr_lc_NNF))
 
     return tr_lc_NNF, tr_lc_D
 
@@ -423,19 +407,11 @@ def fill_top_row(fresh_NNF, fresh_D,
 
     # Return what we need
     return ret_NNF, ret_D
+"""END OF FUNCTIONS THAT DEAL WITH FILLING IN THE NNF (PROPAGATION)"""
 
-# Function to reverse the rows and columns of the input array
-# (first two axes). Returns a flipped copy
-# Example: [[A, B], [C, D]] -> [[D, C], [B, A]]
-def flip_matrix(arr):
-    if arr is not None:
-        cpy = arr.copy()
-        row_rev = cpy[::-1, :]
-        col_rev = row_rev[:, ::-1]
-        return col_rev
-    else:
-        return None
 
+
+"""FUNCTIONS FOR COMPUTING D-VALUES AND BEST-VECTORS"""
 # Uses numpy to quickly calculate the D-values of an
 # entire NNF matrix
 def multiple_D(nnf, src_patches, trg_patches):
@@ -452,23 +428,23 @@ def multiple_D(nnf, src_patches, trg_patches):
 
     # Set to maximum possible square difference if the cell is NaN
     # to increase the D-score for patches with invalid elements
-    sq_diffs[sq_diffs == np.nan] = 255 ** 2
+    sq_diffs[np.isnan(sq_diffs)] = 255 ** 2
 
     # Summing across color channels and then inside patches,
     # use nansum to ignore invalid values
     sq_diff_sums = np.nansum(np.nansum(sq_diffs,
-                                       axis=2),
-                             axis=2)
+                                       axis=2), axis=2)
 
-    # Figuring out number of non-nan pixels in each patch
-    # Note that any operation involving NaN yields NaN
-    # Thus ones will be 1 where values are valid, NaN where they are not
-    ones = sq_diffs / sq_diffs
-
-    # Return sum / number of non-nans
+    # Return sum
     return sq_diff_sums
 
-
+# Input:
+#   vector_arr: array of 2D NN vectors
+#   pos: the starting position of the vectors
+#   src_patches: patches from source image
+#   trg_patches: patches from target image
+# Output:
+#   D-value for each vector in vector_arr, ordered in the same fashion
 def calculate_Ds(vector_arr, pos, src_patches, trg_patches):
     target_positions = vector_arr + pos
 
@@ -484,7 +460,7 @@ def calculate_Ds(vector_arr, pos, src_patches, trg_patches):
 
     return sum_sd_of_sels
 
-
+# Picks the vector with the lowest D-value in vector_arr
 def best_vector(vector_arr, pos, src_patches, trg_patches):
 
     # D-value of each vector (in order of the vector array)
@@ -495,6 +471,54 @@ def best_vector(vector_arr, pos, src_patches, trg_patches):
 
     # Return the vector with the best D-value and the d-value
     return vector_arr[min_D_ind], D_vals[min_D_ind]
+"""END OF FUNCTIONS FOR COMPUTING D-VALUES AND BEST-D VECTORS"""
+
+
+
+
+"""FUNCTIONS FOR RANDOM SEARCH"""
+# Function to conduct random search for some vector.
+# Inputs:
+#   pos: Origin position of the vector in question
+#   vec: some NN vector
+#   D_of_vec: the D-value of vec
+#   bound_matr: multi-dimensional array of pre-generated
+#       R_i values, one for each i, stacked on top of each other.
+#   src_patches: patches of the source image
+#   trg_patches: patches of the target image
+# Outputs:
+#   A vector with a better D-score and the corresponding D-value
+def rand_search(pos, vec, bound_matr, src_patches, trg_patches):
+
+    # This is the target coordinate of vec
+    # (where v_0 in the paper ends up)
+    tgt_coord = vec + pos
+
+    # Component bounds for vectors originating from tgt_coord
+    # First Axis: the i in R_i, Second Axis: bounds for that i
+    bounds = bound_matr[tgt_coord[0], tgt_coord[1], :, :].transpose()
+
+    # Random vectors that obey these bounds (this is is R_i * alpha ^ i * w)
+    obeying_y_comps = flt_to_int(np.random.uniform(low=bounds[:, 0],
+                                                   high=bounds[:, 2]), rnd)
+    obeying_x_comps = flt_to_int(np.random.uniform(low=bounds[:, 1],
+                                                   high=bounds[:, 3]), rnd)
+    obeying_vecs = np.stack((obeying_y_comps, obeying_x_comps), axis=-1)
+
+    # Where these vectors will end up, assuming they started at tgt_coord
+    final_locs = tgt_coord + obeying_vecs
+
+    # Vectors to get from the current position to the final location
+    # This is u_i in the paper (for every i)
+    ui_s = final_locs - pos
+
+    # Vectors to look at to minimize D
+    vecs = np.append(ui_s, np.array([vec]), axis=0)
+
+    # Now choose the best vector from vecs and the corresponding D-value
+    best_vec, best_D = best_vector(vecs, pos, src_patches, trg_patches)
+
+    return best_vec, best_D
 
 # Input:
 #   rect: Some (2+)-dimensional array
@@ -579,63 +603,13 @@ def vec_bounds_stack(rect, alpha, w):
     ret_stack = np.stack(tuple(lst), axis=-1)
 
     return ret_stack
+"""END OF FUNCTIONS FOR RANDOM SEARCH"""
 
-# Input:
-#   vector_rect: Matrix of 2D vectors
-# Let:
-#   v(x, y) be the vector at (x, y) in vector_rect
-#   r(x, y) be the vector at (x, y) in the return matrix
-# Output:
-#   Matrix of vectors such that:
-#       If v(x, y) points inside the rectangle, r(x, y) = v(x, y)
-#       Otherwise, r(x, y) is re-randomized to point inside the rectangle
-def re_rand_outs(vector_rect):
 
-    # Matrix that indicates where vectors point outside the rectangle
-    out_of_matrix = np.negative(stack_clones(in_targ_mask(vector_rect), 2))
 
-    # Matrix of vector component bounds
-    bound_matr = make_vector_bounds(vector_rect)
 
-    # Matrix of vectors guaranteed to point inside the rectangle
-    obeying_ys = np.random.uniform(low=bound_matr[:, :, 0],
-                                   high=bound_matr[:, :, 2])
-    obeying_xs = np.random.uniform(low=bound_matr[:, :, 1],
-                                   high=bound_matr[:, :, 3])
-    obeying_vecs = flt_to_int(np.dstack((obeying_ys, obeying_xs)), rnd)
-
-    # Replace the outside-pointing vectors with a random vector
-    # guaranteed to point inside the rectangle
-    ret_matr = np.where(out_of_matrix, obeying_vecs, vector_rect)
-
-    return ret_matr
-
-# Input: a 3D array (a matrix of 2-vectors)
-# Let:
-#   (x, y) be some arbitrary position in the matrix
-#   (a, b) be the vector at (x, y)
-# Output: boolean mask B = [[c]] such that:
-#       if ((x, y) + (a, b)) is a valid position of the matrix (i.e. in bounds):
-#           c = True
-#       if ((x, y) + (a, b)) not a valid position of the matrix (i.e. out of bounds):
-#           c = False
-def in_targ_mask(vector_rect):
-    # Where the vectors point to
-    trg_cds = targ_coords(vector_rect)
-    # X, Y components of destination components
-    y_rect, x_rect = split_yx(trg_cds)
-    # Bounds for X and Y
-    height, width = x_rect.shape
-
-    # Set positions in mask to True where:
-    # Destinations are inside Y and X bounds (check first component)
-    ret_mask = np.logical_and.reduce((0 <= y_rect,
-                                     (y_rect < height),
-                                     (0 <= x_rect),
-                                     (x_rect < width)))
-
-    return ret_mask
-
+"""FUNCTIONS TO DEAL WITH VECTOR SNIPPING"""
+"""VECTOR SNIPPING - "SNIPPING" A VECTOR ONCE IT HITS THE EDGE OF A BOUNDING RECTANGLE"""
 # Input:
 #   vec: some 2D vector
 #   pos: some 2D vector
@@ -651,7 +625,8 @@ def snip_vector(vec, pos, rect):
         return vec
     else:
         # Unit vector
-        unit = unit_vec(vec)
+        mag = 1.0 * np.sum((vec * vec)) ** 0.5
+        unit = vec / mag
 
         # T value for this unit vector
         T = calculate_T(unit, pos, rect)
@@ -671,11 +646,6 @@ def snip_vector(vec, pos, rect):
                               np.array([y_ub, x_ub]))
         # Convert back to an int vector
         return flt_to_int(clipped_cds - pos, rnd)
-
-
-def unit_vec(vec):
-    mag = 1.0 * np.sum((vec * vec)) ** 0.5
-    return vec / mag
 
 
 def calculate_T(unit, pos, rect):
@@ -724,122 +694,12 @@ def vector_points_inside(vec, pos, rect):
     below_ubs = (tgt <= np.array([y_ub, x_ub]))
 
     return np.logical_and.reduce(np.hstack((below_ubs, above_lbs)))
+"""END OF FUNCTIONS TO DEAL WITH VECTOR SNIPPING"""
 
-# Input:
-#   M by N Matrix [[V_(i, j)]]
-#   Y by X Matrix of 2-vectors [[[a, b]]] (3D-array), a in [0, N-1], b in [0, M-1]
-# Output:
-#   Y by X Matrix where element [a, b] is equal to [[V_(a, b)]]
-def lookup_values(src_matrix, index_matrix):
-    return src_matrix[split_yx(index_matrix)]
 
-# Input:
-#   NNF (as a matrix, every element is a 2-array)
-# Let:
-#   (x_s, y_s) be the coordinates of some patch S in the source image
-#   (x_n, y_n) be the x and y components of the NN vector at (x_s, y_s)
-#   (x_t, y_t) be the coordinates of some patch T in the target image
-#   S and T are (supposed) nearest-neighbour patches
-# We note that (z is x or y): z_t = z_s + z_n
-# Output:
-#   Matrix of destination coordinates [[[x_t, y_t]]]
-def targ_coords(nn_matrix):
-    coord_mat = coords_of(nn_matrix)
-    # Casting as int
-    return (coord_mat + nn_matrix).astype(int)
 
-# Input: matrix where every element is a (y, x) coordinate
-#   (this is a 3D array, shape is assumed to be (N x M x 2))
-# Output: tuple of (matrix of y-coords, matrix of x-coords)
-def split_yx(vector_rect):
-    return (vector_rect[..., 0], vector_rect[..., 1])
 
-# Input: some (2+)D-array
-# Output: (d, l, u, r) = (y of down side,
-#                         x of left side,
-#                         y of up side,
-#                         x of right side)
-def edge_indices(rect):
-
-    # Only take the first two shape values (these will the the
-    # height/width of the rectangle)
-    u, r = np.array(rect.shape[:2]) - np.array([1, 1])
-    return 0, 0, u, r
-
-# Wrapper function to create a matrix of
-# (y, x) - coordinates for a given array (only 2D coordinates):
-def coords_of(arr):
-    return make_coordinates_matrix(arr.shape[:2])
-
-# Returns the integer number of iterations needed
-# for w*alpha^i to decay to < 1:
-def num_iters_needed(w, alpha):
-    # According to Section 3.2, random search terminates when w*alpha^i < 1
-    # Solving for i:
-    # w*alpha^i < 1
-    # =(div by w)-> alpha ^ i < 1 / w
-    # =(log both sides)-> i < -log_alpha (w)
-    # =(mult by -1) -> -i > log_alpha(w)
-
-    # Thus, we can see that the number of iterations needed for random search to terminate is about -log(w)
-
-    # Return an int, this will be used for loops
-    return int(-1 * log(w, alpha)) + 1
-
-# Input:
-#   arr: Array of dimension N
-#   depth: Number of times to stack arr on top of itself, along a new axis
-# Output:
-#   Array of dimension N+1 (input array stacked depth times through last axis)
-def stack_clones(arr, depth):
-    tup_to_stack = tuple([arr] * depth) # convert repeated list to tuple
-    return np.stack(tup_to_stack, axis=-1) # stack along last axis
-
-# Input:
-#   N-D array of floats
-#   Rounding method
-# Output:
-#   N-D array of integers (determined by rounding method)
-def flt_to_int(arr, method):
-    return method(arr).astype(int)
-
-# This function uses a computed NNF to reconstruct the source image
-# using pixels from the target image. The function takes two input
-# arguments
-#     - target: the target image that was used as input to PatchMatch
-#     - f:      the nearest-neighbor field the algorithm computed
-# and should return a reconstruction of the source image:
-#     - rec_source: an openCV image that has the same shape as the source image
-#
-# To reconstruct the source, the function copies to pixel (x,y) of the source
-# the color of pixel (x,y)+f(x,y) of the target.
-#
-# The goal of this routine is to demonstrate the quality of the computed NNF f.
-# Specifically, if patch (x,y)+f(x,y) in the target image is indeed very similar
-# to patch (x,y) in the source, then copying the color of target pixel (x,y)+f(x,y)
-# to the source pixel (x,y) should not change the source image appreciably.
-# If the NNF is not very high quality, however, the reconstruction of source image
-# will not be very good.
-#
-# You should use matrix/vector operations to avoid looping over pixels,
-# as this would be very inefficient
-def reconstruct_source_from_target(target, f):
-    rec_source = None
-
-    #############################################
-    ###  PLACE YOUR CODE BETWEEN THESE LINES  ###
-    #############################################
-
-    # Matrix such that element [x, y] = (x, y) + f(x, y)
-    tgt_coords = targ_coords(f)
-
-    # Look up pixels in target
-    rec_source = lookup_values(target, tgt_coords)
-
-    #############################################
-
-    return rec_source
-
+"""INCLUDED HELPER FUNCTIONS"""
 # This function takes an NxM image with C color channels and a patch size P
 # and returns a matrix of size NxMxCxP^2 that contains, for each pixel [i,j] in
 # in the image, the pixels in the patch centered at [i,j].
@@ -883,3 +743,94 @@ def make_coordinates_matrix(im_shape, step=1):
     axis_y = np.repeat(range_y[..., np.newaxis], len(range_x), axis=1)
 
     return np.dstack((axis_y, axis_x))
+"""END OF INCLUDED HELPER FUNCTIONS"""
+
+
+
+""" WRAPPER / SHORTHAND FUNCTIONS """
+# Function to reverse the rows and columns of the input array
+# (first two axes). Returns a flipped copy
+# Example: [[A, B], [C, D]] -> [[D, C], [B, A]]
+def flip_matrix(arr):
+    if arr is not None:
+        cpy = arr.copy()
+        row_rev = cpy[::-1, :]
+        col_rev = row_rev[:, ::-1]
+        return col_rev
+    else:
+        return None
+
+# Input:
+#   M by N Matrix [[V_(i, j)]]
+#   Y by X Matrix of 2-vectors [[[a, b]]] (3D-array), a in [0, N-1], b in [0, M-1]
+# Output:
+#   Y by X Matrix where element [a, b] is equal to [[V_(a, b)]]
+def lookup_values(src_matrix, index_matrix):
+    return src_matrix[split_yx(index_matrix)]
+
+# Input:
+#   NNF (as a matrix, every element is a 2-array)
+# Let:
+#   (x_s, y_s) be the coordinates of some patch S in the source image
+#   (x_n, y_n) be the x and y components of the NN vector at (x_s, y_s)
+#   (x_t, y_t) be the coordinates of some patch T in the target image
+#   S and T are (supposed) nearest-neighbour patches
+# We note that (z is x or y): z_t = z_s + z_n
+# Output:
+#   Matrix of destination coordinates [[[x_t, y_t]]]
+
+# Input: matrix where every element is a (y, x) coordinate
+#   (this is a 3D array, shape is assumed to be (N x M x 2))
+# Output: tuple of (matrix of y-coords, matrix of x-coords)
+def split_yx(vector_rect):
+    return (vector_rect[..., 0], vector_rect[..., 1])
+
+# Input: some (2+)D-array
+# Output: (d, l, u, r) = (y of down side,
+#                         x of left side,
+#                         y of up side,
+#                         x of right side)
+def edge_indices(rect):
+
+    # Only take the first two shape values (these will the the
+    # height/width of the rectangle)
+    u, r = np.array(rect.shape[:2]) - np.array([1, 1])
+    return 0, 0, u, r
+
+# Wrapper function to create a matrix of
+# (y, x) - coordinates for a given array (only 2D coordinates):
+def coords_of(arr):
+    return make_coordinates_matrix(arr.shape[:2])
+
+# Input:
+#   arr: Array of dimension N
+#   depth: Number of times to stack arr on top of itself, along a new axis
+# Output:
+#   Array of dimension N+1 (input array stacked depth times through last axis)
+def stack_clones(arr, depth):
+    tup_to_stack = tuple([arr] * depth) # convert repeated list to tuple
+    return np.stack(tup_to_stack, axis=-1) # stack along last axis
+
+# Returns the integer number of iterations needed
+# for w*alpha^i to decay to < 1:
+def num_iters_needed(w, alpha):
+    # According to Section 3.2, random search terminates when w*alpha^i < 1
+    # Solving for i:
+    # w*alpha^i < 1
+    # =(div by w)-> alpha ^ i < 1 / w
+    # =(log both sides)-> i < -log_alpha (w)
+    # =(mult by -1) -> -i > log_alpha(w)
+
+    # Thus, we can see that the number of iterations needed for random search to terminate is about -log(w)
+
+    # Return an int, this will be used for loops
+    return int(-1 * log(w, alpha)) + 1
+
+# Input:
+#   N-D array of floats
+#   Rounding method
+# Output:
+#   N-D array of integers (determined by rounding method)
+def flt_to_int(arr, method):
+    return method(arr).astype(int)
+"""END OF WRAPPER / SHORTHAND FUNCTIONS"""
