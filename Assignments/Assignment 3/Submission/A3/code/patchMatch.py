@@ -136,12 +136,12 @@ class PatchMatch:
             success = True
             msg = msg.format(status=successful)
 
-            # Interpret the image as float array (easier to reason about)
-            scaled_img = img_ptr.astype(np.float32)
+            # Interpret the image as uint8
+            flt_img = img_ptr.astype(np.uint8)
 
             # Get the right key in the dictionary to point to the image's
             # file pointer
-            self._images[key] = scaled_img
+            self._images[key] = flt_img
 
 
         #########################################
@@ -176,8 +176,7 @@ class PatchMatch:
         # If it isn't None we might be able to still write it to a file
         else:
 
-            # According to my specification, the image is a bunch of
-            # floats, so convert to integers
+            # Convert to a writable format if it's not an int
             scaled_intensities = np.round(img_ptr).astype(np.uint8)
 
             # Try to save the image

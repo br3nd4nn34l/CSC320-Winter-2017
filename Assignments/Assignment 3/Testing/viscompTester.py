@@ -138,7 +138,10 @@ if __name__ == '__main__':
         "Deer": make_path([testImgs_path, "deer"]),
         "Jag": make_path([testImgs_path, "jaguar"]),
         "Jag2" : make_path([testImgs_path, "jaguar2"]),
-        "Jag3": make_path([testImgs_path, "jaguar3"])
+        "Jag3": make_path([testImgs_path, "jaguar3"]),
+        "Raptor": make_path([testImgs_path, "raptor"]),
+        "Stormtrooper": make_path([testImgs_path, "stormtrooper"]),
+        "Doge": make_path([testImgs_path, "doge"])
     }
 
     # Path to output image folder
@@ -147,6 +150,86 @@ if __name__ == '__main__':
 
     # Dictionary of test names to their command strings
     test_dct = {
+
+        "Jag All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag"], "source.png"]),
+            make_path([imgs_to_paths["Jag"], "target.png"]),
+            make_path([output_path, "Jag All", "Jag All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Jag2 All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag2"], "source.png"]),
+            make_path([imgs_to_paths["Jag2"], "target.png"]),
+            make_path([output_path, "Jag2 All", "Jag2 All"]),
+            init_NNF=make_path([imgs_to_paths["Jag2"],
+                                "jaguar2.init.npy"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Jag3 All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag3"], "source.png"]),
+            make_path([imgs_to_paths["Jag3"], "target.png"]),
+            make_path([output_path, "Jag3 All", "Jag3 All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Deer All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Deer"], "source.png"]),
+            make_path([imgs_to_paths["Deer"], "target.png"]),
+            make_path([output_path, "Deer All", "Deer All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Raptor All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Raptor"], "source.png"]),
+            make_path([imgs_to_paths["Raptor"], "target.png"]),
+            make_path([output_path, "Raptor All", "Raptor All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Stormtrooper All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Stormtrooper"], "source.png"]),
+            make_path([imgs_to_paths["Stormtrooper"], "target.png"]),
+            make_path([output_path, "Stormtrooper All", "Stormtrooper All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Doge All": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Doge"], "source.png"]),
+            make_path([imgs_to_paths["Doge"], "target.png"]),
+            make_path([output_path, "Doge All", "Doge All"]),
+            dis_prop=False, dis_rand=False,
+            iters=3, part_res=True,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
         "Jag2 NoProp":make_cmd_string(
             python_path,
             viscompPy_path,
@@ -171,25 +254,12 @@ if __name__ == '__main__':
             dis_prop=False, dis_rand=True,
             iters=3, part_res=True,
             nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Jag2 All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Jag2"], "source.png"]),
-            make_path([imgs_to_paths["Jag2"], "target.png"]),
-            make_path([output_path, "Jag2 All", "Jag2 All"]),
-            init_NNF=make_path([imgs_to_paths["Jag2"],
-                                "jaguar2.init.npy"]),
-            dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
-            nnf_img=True, nnf_vecs=True,
             rec_src=True)
     }
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["Jag2 All", "Jag2 NoRand", "Jag2 NoProp"]
+    okay_to_run = ["Doge All"]
 
     for test in okay_to_run:
         run_command(test_dct[test])
