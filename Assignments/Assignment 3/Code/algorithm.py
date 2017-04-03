@@ -768,17 +768,6 @@ def flip_matrix(arr):
 def lookup_values(src_matrix, index_matrix):
     return src_matrix[split_yx(index_matrix)]
 
-# Input:
-#   NNF (as a matrix, every element is a 2-array)
-# Let:
-#   (x_s, y_s) be the coordinates of some patch S in the source image
-#   (x_n, y_n) be the x and y components of the NN vector at (x_s, y_s)
-#   (x_t, y_t) be the coordinates of some patch T in the target image
-#   S and T are (supposed) nearest-neighbour patches
-# We note that (z is x or y): z_t = z_s + z_n
-# Output:
-#   Matrix of destination coordinates [[[x_t, y_t]]]
-
 # Input: matrix where every element is a (y, x) coordinate
 #   (this is a 3D array, shape is assumed to be (N x M x 2))
 # Output: tuple of (matrix of y-coords, matrix of x-coords)
