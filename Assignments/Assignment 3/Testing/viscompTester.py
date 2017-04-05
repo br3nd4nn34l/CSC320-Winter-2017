@@ -168,8 +168,6 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 All", "Jag2 All"]),
-            init_NNF=make_path([imgs_to_paths["Jag2"],
-                                "jaguar2.init.npy"]),
             dis_prop=False, dis_rand=False,
             iters=3, part_res=True,
             nnf_img=True, nnf_vecs=True,

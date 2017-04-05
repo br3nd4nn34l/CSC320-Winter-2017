@@ -158,7 +158,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag"], "target.png"]),
             make_path([output_path, "Jag All", "Jag All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3, k=5,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 All", "Jag2 All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3, k=5,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Deer"], "target.png"]),
             make_path([output_path, "Deer All", "Deer All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -202,7 +202,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Raptor"], "target.png"]),
             make_path([output_path, "Raptor All", "Raptor All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Stormtrooper"], "target.png"]),
             make_path([output_path, "Stormtrooper All", "Stormtrooper All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -224,7 +224,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Doge"], "target.png"]),
             make_path([output_path, "Doge All", "Doge All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
+            iters=3,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -235,7 +235,7 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 NoProp", "Jag2 NoProp"]),
             dis_prop=True, dis_rand=False,
-            iters=9, part_res=True,
+            iters=9, k=4,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -246,14 +246,14 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 NoRand", "Jag2 NoRand"]),
             dis_prop=False, dis_rand=True,
-            k=5, iters=3, part_res=True,
+            k=5, iters=3,
             nnf_img=True, nnf_vecs=True,
             rec_src=True)
     }
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["Jag2 NoRand"]
+    okay_to_run = ["Jag2 All"]
 
     for test in okay_to_run:
         run_command(test_dct[test])

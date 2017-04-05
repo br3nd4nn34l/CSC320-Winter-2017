@@ -29,12 +29,33 @@ np.random.seed(seed=131)
 np.seterr(divide='ignore', invalid='ignore')
 
 # MY STUFF
-# Importing heapify from heapq
+# For making heaps quickly
 from heapq import heapify
+# For convenience, way faster than numpy's
+from math import log
 
 # For accessing the different elements of the tuples
 priority, counter, displacement = 0, 1, 2
 
+
+# This is used to keep track of first availible id to us
+first_avail_id = 0
+
+# Returns an array of unique ids shaped like arr
+# to keep track of each element in arr. Used to
+# assist when trying new vector tuples on heaps.
+def make_ids(arr):
+    global first_avail_id
+
+    # Generate the list of ids, starting from the
+    # first available one
+    flat_ids = np.arange(first_avail_id, first_avail_id + arr.size)
+
+    # Update the maximum id with the new maximum
+    first_avail_id = flat_ids[-1] + 1
+
+    # Return reshaped IDs
+    return flat_ids.reshape(arr.shape)
 
 # Input:
 #   coll: some collection of same-type objects
@@ -121,19 +142,56 @@ def reverse_zip(lst_of_tups):
     return zip(*lst_of_tups)
 
 # Input:
+#   vect_arr: some array of 2D vector
+#   pos_arr: the respective origins of the above vectors
+#   rect: some (2D+) array
+# Output:
+#   Clips a vector's components such that it points inside rect
+def clip_vectors(vect_arr, pos_arr, rect):
+
+    # Coordinates of the target patches that the vector points to
+    trg_cds = vect_arr + pos_arr
+
+    # Upper / Lower X and Y bounds
+    y_lb, x_lb, y_ub, x_ub = edge_indices(rect)
+
+    # Clip the coordinates such that they're inside the rectangle
+    clipped_cds = np.clip(trg_cds,
+                          [y_lb, x_lb],
+                          [y_ub, x_ub])
+
+    # Convert the clipped coordinates back into vectors and return it
+    return (clipped_cds - pos_arr).round().astype(int)
+
+# Returns the integer number of iterations needed
+# for w*alpha^i to decay to < 1:
+def num_iters_needed(w, alpha):
+    # According to Section 3.2, random search terminates when w*alpha^i < 1
+    # Solving for i:
+    # w*alpha^i < 1
+    # =(div by w)-> alpha ^ i < 1 / w
+    # =(log both sides)-> i < -log_alpha (w)
+    # =(mult by -1) -> -i > log_alpha(w)
+
+    # Thus, we can see that the number of iterations needed for random search to terminate is about -log(w)
+
+    # Return an int, this will be used for loops
+    return int(-1 * log(w, alpha)) + 1
+
+# Input:
 #   cur_pos: 2-tuple indicating the position of the heap we want to update in the image
 #   heap_matrix: the matrix of NNF heaps
 #   dup_matrix: the matrix of items we're using to check duplicate displacements against
-#   src_heap: some NNF heap we're trying to improve heap_matrix[cur_pos] with
+#   src_tups: some list of NN-vector tuples we're trying to improve heap_matrix[cur_pos] with
 #   src_patches: patches of the source image
 #   trg_patches: patches of the target image
-# Improves heap_matrix[cur_pos] and updates dup_matrix[cur_pos] using the NN vectors
-# contained in src_heap
-def improve_heap(cur_pos, heap_matrix, dup_matrix, src_heap,
+# Improves heap_matrix[cur_pos] and updates dup_matrix[cur_pos] using the
+# NN vector tuples contained in src_tups
+def improve_heap(cur_pos, heap_matrix, dup_matrix, src_tups,
                  src_patches, trg_patches):
 
-    # Only do this if the src_heap is valid
-    if src_heap is not None:
+    # Only do this if the src_tups is valid
+    if src_tups is not None:
 
         # Accessing the stuff we want to update
         cur_heap = heap_matrix[cur_pos[0]][cur_pos[1]]
@@ -141,7 +199,7 @@ def improve_heap(cur_pos, heap_matrix, dup_matrix, src_heap,
 
         # List of tuples with their D-values updated for the
         # new position they will occupy
-        updated_tups = update_tups(cur_pos, src_heap,
+        updated_tups = update_tups(cur_pos, src_tups,
                                    src_patches, trg_patches)
 
         # For each tuple, try to improve the current heap with it
@@ -177,14 +235,16 @@ def update_tups(cur_pos, heap,
     nn_vec_arr = np.array(map(lambda tup: tup[displacement],
                               heap))
 
+    # Snip the vectors
+    nn_vec_arr = clip_vectors(nn_vec_arr, cur_pos, src_patches)
+
     # Get the D-values of the above vectors if they were to start
     # from the current position
     d_val_arr = calculate_Ds(nn_vec_arr, cur_pos,
                              src_patches, trg_patches)
 
-    # Get the counter values of these vectors
-    ctr_lst = map(lambda tup: tup[counter],
-                  heap)
+    # Making new counter values for these vectors
+    ctr_lst = make_ids(d_val_arr)
 
     # Zip the three arrays together back into a list of
     # tuples of the form [(priority, ctr, displacement)]
@@ -199,25 +259,16 @@ def update_tups(cur_pos, heap,
 #   D-value for each vector in vector_arr, ordered in the same fashion
 def calculate_Ds(vector_arr, pos, src_patches, trg_patches):
 
-    # Which vectors point outside the target
-    outside_target = np.negative(in_vectors(
-        vector_arr, pos, src_patches))
+    # KEY ASSUMPTION: none of the vectors GO OUT OF BOUNDS
+    # (HANDLE THAT CASE BEFORE CALLING THIS FUNCTION)
 
-    # Setting the vectors that point outside the target to
-    # 0,0 so they don't give OOB errors
-    good_vecs = vector_arr.copy()
-    good_vecs[outside_target] = np.array([0, 0])
-
-    # Where the above vectors end up in the target image
-    target_positions = good_vecs + pos
+    # Where the vectors end up in the target image
+    target_positions = vector_arr + pos
 
     # Selecting the patches from the source and target
     src_selection = src_patches[pos[0], pos[1]]
     trg_selection = trg_patches[target_positions[:, 0],
                                 target_positions[:, 1]]
-
-    # Set the out-vector's patches to all NaN
-    trg_selection[outside_target] = np.nan
 
     # Taking the square difference between the source and the target
     sq_diff_of_sels = (src_selection - trg_selection) ** 2
@@ -266,7 +317,7 @@ def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
     if prop_enabled:
 
         # Offset if the iteration is even is Up, Left = [-1, -1]
-        # (since coordinates are reversed in images)
+        # (coordinates are reversed in images)
         offset = -1
         if odd_iteration:
             # The offset is the opposite for even iterations
@@ -274,8 +325,8 @@ def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
 
         # Get the positions offset vertically and horizontally if possible
         # Example: on an even iteration
-        vert_pos = (cur_pos[0] + offset, cur_pos[1])
-        horz_pos = (cur_pos[0], cur_pos[1] + offset)
+        vert_pos = cur_pos + [offset, 0]
+        horz_pos = cur_pos + [0, offset]
 
         # Get the NNF heaps located at the aforementioned positions
         vert_heap = safe_lst_lookup(f_heap, vert_pos)
@@ -295,16 +346,43 @@ def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
 
     if random_enabled:
 
-        # TODO: figure out how to do random search with OOB vectors
-        # BOUND SOLUTION IN A3 made this fast!
-        # TRY RADHIKA'S SOLUTION - THAT WAS PRETTY FAST AND SHOULD WORK HERE
-
-        random_search(cur_pos, f_heap, f_coord_dictionary, alpha, w)
+        # Try to improve the heap with random search
+        random_search(cur_pos, f_heap, f_coord_dictionary,
+                      src_patches, trg_patches,
+                      alpha, w)
 
 # Does random search to attempt to improve the NN
 # vector heap located at cur_pos
-def random_search(cur_pos, f_heap, f_coord_dictionary, alpha, w):
-    pass
+def random_search(cur_pos, f_heap, f_coord_dictionary,
+                  src_patches, trg_patches, alpha, w):
+
+    iters = num_iters_needed(w, alpha)
+
+    # Radii allowed for each i
+    radii_arr = np.floor(w * (alpha ** np.arange(iters)))
+
+    # R_i in the paper (array for each i)
+    ri_vec_arr = np.random.uniform(low=[-1, -1],
+                                   high=[1,  1],
+                                   size=(iters, 2))
+    # R_i * (w * alpha^i) in the paper (array for each i)
+    rand_vecs = ri_vec_arr * radii_arr[:, np.newaxis]
+
+    # u_i in the paper (array for each i)
+    ui_arr = cur_pos + rand_vecs
+
+    # Put the u_i's into the heap format [(priority, counter, displacement)]
+    # Priority and counter are placeholders -
+    #   they'll be re-calculated during heap improvement
+    ui_tups = map(lambda vec: (1, 1, vec),
+                  ui_arr)
+
+    # Try to improve the current vector heap with the above u_i vector tuples
+    improve_heap(cur_pos,
+                 f_heap, f_coord_dictionary,
+                 ui_tups,
+                 src_patches, trg_patches)
+
 
 # ASSIGNMENT FUNCTIONS BELOW THIS POINT
 
@@ -363,8 +441,7 @@ def propagation_and_random_search_k(source_patches, target_patches,
                                     alpha, w,
                                     propagation_enabled, random_enabled,
                                     odd_iteration,
-                                    global_vars
-                                    ):
+                                    global_vars):
 
     #################################################
     ###  PLACE YOUR A3 CODE BETWEEN THESE LINES   ###
@@ -385,7 +462,8 @@ def propagation_and_random_search_k(source_patches, target_patches,
             # Try to improve each pixel with the methodology
             # described in the paper
             per_pixel_improvement(
-                (row, col), propagation_enabled, random_enabled,
+                np.array([row, col]),
+                propagation_enabled, random_enabled,
                 source_patches, target_patches,
                 f_heap, f_coord_dictionary,
                 alpha, w, odd_iteration
@@ -463,12 +541,12 @@ def NNF_matrix_to_NNF_heap(source_patches, target_patches, f_k):
     #   At arr[k, x, y], we have the 4-array [D, counter, f_y, f_x] (f_i is the i-component of f)
     combined = np.empty((f_k.shape[0], f_k.shape[1], f_k.shape[2], 4))
     # Set first component to priority (D-value)
-    combined[:, :, :, 0] = D_matr[:, :, :]
-    # Set second component to unique counter (tie breaker)
-    combined[:, :, :, 1] = np.arange((rows * cols * k)).reshape((k, rows, cols))
+    combined[..., 0] = D_matr
+    # Second component to tie breaker
+    combined[..., 1] = make_ids(combined[..., 1])
     # Set last components to nnf
-    combined[:, :, :, 2] = y_comps[:, :, :]
-    combined[:, :, :, 3] = x_comps[:, :, :]
+    combined[..., 2] = y_comps
+    combined[..., 3] = x_comps
 
     # Rearrange such that each pixel is an array of length k
     # with each element being an array of length 4
@@ -537,6 +615,14 @@ def NNF_heap_to_NNF_matrix(f_heap):
                               lst_of_tup),
                           row),
                       f_heap)
+
+    # Sort the above according to D-value
+    nested_lsts = map(lambda row:
+                      map(lambda lst_of_lsts:
+                          sorted(lst_of_lsts,
+                                 key=lambda lst: lst[priority]),
+                          row),
+                      nested_lsts)
 
     # Convert the above multi-D list to a numpy array
     numpy_arr = np.array(nested_lsts)
@@ -610,6 +696,14 @@ def reconstruct_source_from_target(target, f):
     ###  PLACE YOUR A3 CODE BETWEEN THESE LINES  ###
     ################################################
 
+    # Vectors are assumed to be within bounds, but clip them for safety
+    safe_vecs = clip_vectors(f, coords_of(f), f)
+
+    # Matrix such that element [x, y] = (x, y) + f(x, y)
+    tgt_coords = coords_of(f) + safe_vecs
+
+    # Look up pixels in target
+    rec_source = lookup_values(target, tgt_coords)
 
     #############################################
 
