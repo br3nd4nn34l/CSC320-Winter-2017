@@ -147,21 +147,79 @@ def reverse_zip(lst_of_tups):
 #   rect: some (2D+) array
 # Output:
 #   Clips a vector's components such that it points inside rect
-def clip_vectors(vect_arr, pos_arr, rect):
+def snip_vectors(vect_arr, pos_arr, rect):
 
-    # Coordinates of the target patches that the vector points to
-    trg_cds = vect_arr + pos_arr
+    # Indicates which vectors need to be clipped
+    in_rect = in_vectors(vect_arr, pos_arr, rect)
 
     # Upper / Lower X and Y bounds
     y_lb, x_lb, y_ub, x_ub = edge_indices(rect)
+
+    # Getting unit vectors of each vector
+    mag_arr = (1.0 * (vect_arr ** 2)).sum(axis=1) ** 0.5
+    unit_arr = vect_arr / mag_arr[:, np.newaxis]
+
+    # T value for each unit vector to intersect
+    # with the closest rectangle side
+    T_vals = calculate_Ts(unit_arr, pos_arr, rect)
+
+    # All vectors snipped
+    snipped_vecs = unit_arr * T_vals[:, np.newaxis]
+
+    # Keep the vectors that point inside
+    snipped_vecs = np.where(in_rect[:, np.newaxis],
+                            vect_arr,
+                            snipped_vecs)
+
+    # Coordinates of the target patches that the vectors point to
+    trg_cds = snipped_vecs + pos_arr
 
     # Clip the coordinates such that they're inside the rectangle
     clipped_cds = np.clip(trg_cds,
                           [y_lb, x_lb],
                           [y_ub, x_ub])
 
-    # Convert the clipped coordinates back into vectors and return it
+    # Convert back to an int vector
     return (clipped_cds - pos_arr).round().astype(int)
+
+
+def calculate_Ts(unit_vecs, pos_arr, rect):
+    # Splitting unit-vector into x, y components for clarity
+    unit_ys, unit_xs = split_yx(unit_vecs)
+    y_coords, x_coords = split_yx(pos_arr)
+
+    # Getting the coordinates of the rectangle's sides:
+    d, l, u, r = edge_indices(rect)
+
+    # Note: WLOG for x_k = A.x + T * unit(A -> B).x
+    # (where A is src coordinate, B is target coordinate):
+    # T = (x_k - A.x) / (unit(A -> B).x)
+
+    # T-values for Y
+    # To get the vectors to intersect with Y = d
+    T_ds = (d - y_coords) / unit_ys
+    # To get the vectors to intersect with Y = u
+    T_us = (u - y_coords) / unit_ys
+
+    # T-values for X
+    # To get the vectors to intersect with X = l
+    T_ls = (l - x_coords) / unit_xs
+    # To get the vectors to intersect with X = r
+    T_rs = (r - x_coords) / unit_xs
+
+    # Pick T_final = min(T_x, T_y) where:
+    #   T_x = (T_r if (unit.x > 0) else T_l)
+    #   T_y = (T_u if (unit.y > 0) else T_d)
+    T_xs, T_ys = np.zeros_like(T_ls), np.zeros_like(T_ds)
+    T_xs = np.where(unit_xs > 0, T_rs, T_xs)
+    T_xs = np.where(unit_xs < 0, T_ls, T_xs)
+    T_ys = np.where(unit_ys > 0, T_us, T_ys)
+    T_ys = np.where(unit_ys < 0, T_ds, T_ys)
+
+    T_finals = np.column_stack((T_xs, T_ys)).min(axis=1)
+
+    return T_finals
+
 
 # Returns the integer number of iterations needed
 # for w*alpha^i to decay to < 1:
@@ -236,7 +294,7 @@ def update_tups(cur_pos, heap,
                               heap))
 
     # Snip the vectors
-    nn_vec_arr = clip_vectors(nn_vec_arr, cur_pos, src_patches)
+    nn_vec_arr = snip_vectors(nn_vec_arr, cur_pos, src_patches)
 
     # Get the D-values of the above vectors if they were to start
     # from the current position
@@ -696,14 +754,20 @@ def reconstruct_source_from_target(target, f):
     ###  PLACE YOUR A3 CODE BETWEEN THESE LINES  ###
     ################################################
 
-    # Vectors are assumed to be within bounds, but clip them for safety
-    safe_vecs = clip_vectors(f, coords_of(f), f)
-
     # Matrix such that element [x, y] = (x, y) + f(x, y)
-    tgt_coords = coords_of(f) + safe_vecs
+    tgt_cds = coords_of(f) + f
+
+    # Bounds on the rectangle
+    y_lb, x_lb, y_ub, x_ub = edge_indices(f)
+
+    # Vectors are assumed to be within bounds, but clip them for safety
+    safe_cds = np.clip(tgt_cds,
+                       [y_lb, x_lb],
+                       [y_ub, x_ub])
+    print safe_cds
 
     # Look up pixels in target
-    rec_source = lookup_values(target, tgt_coords)
+    rec_source = lookup_values(target, safe_cds)
 
     #############################################
 
