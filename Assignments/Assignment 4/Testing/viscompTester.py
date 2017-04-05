@@ -67,8 +67,8 @@ def make_cmd_string(py_path, # Path to python
     exec_path = """{py_name} \"{viscomp_path}\" """.format(py_name=py_path, viscomp_path=vc_path)
 
     return exec_path + create_cmd_args(src, trg, out, # Image paths
-                    iters, patch_size, alpha, w, # Numerical constants
-                    init_NNF,
+                    k, iters, patch_size, alpha, w, # Numerical constants
+                    init_NNF, nlm, nlm_h,
                     dis_rand, dis_prop, # Iteration params
                     nnf_img, part_res, nnf_vecs, rec_src, # NNF variables
                     nnf_ss, nnf_lw, nnf_lc,  # More NNF variables
@@ -87,7 +87,7 @@ def create_cmd_args(src, trg, out, # Image paths
 
     # Dictionary of actual tag names to input names:
     tag_name_dct = {"source":src, "target":trg, "output":out,
-                    "iters":iters, "patch-size":patch_size, "alpha":alpha, "w":w,
+                    "k":k, "iters":iters, "patch-size":patch_size, "alpha":alpha, "w":w,
                     "init-nnf":init_NNF,
                     "disable-random":dis_rand, "disable-propagation":dis_prop,
                     "nnf-image":nnf_img, "partial-results":part_res, "nnf-vectors":nnf_vecs, "rec-source":rec_src,
@@ -168,8 +168,6 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 All", "Jag2 All"]),
-            init_NNF=make_path([imgs_to_paths["Jag2"],
-                                "jaguar2.init.npy"]),
             dis_prop=False, dis_rand=False,
             iters=3, part_res=True,
             nnf_img=True, nnf_vecs=True,
@@ -236,8 +234,6 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 NoProp", "Jag2 NoProp"]),
-            init_NNF=make_path([imgs_to_paths["Jag2"],
-                                "jaguar2.init.npy"]),
             dis_prop=True, dis_rand=False,
             iters=9, part_res=True,
             nnf_img=True, nnf_vecs=True,
@@ -249,17 +245,15 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 NoRand", "Jag2 NoRand"]),
-            init_NNF=make_path([imgs_to_paths["Jag2"],
-                                "jaguar2.init.npy"]),
             dis_prop=False, dis_rand=True,
-            iters=3, part_res=True,
+            k=5, iters=3, part_res=True,
             nnf_img=True, nnf_vecs=True,
             rec_src=True)
     }
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["Doge All"]
+    okay_to_run = ["Jag2 NoRand"]
 
     for test in okay_to_run:
         run_command(test_dct[test])
