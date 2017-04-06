@@ -13,14 +13,14 @@ A. PLEASE ANSWER THE FOLLOWING QUESTIONS (YOUR ASSIGNMENT WILL NOT BE MARKED
 1. I verify that my submission adheres to the Academic Honesty policy 
    stated in http://www.cs.toronto.edu/~kyros/courses/320/policy.html
 
-   ___Yes   ___No
+   __X_Yes   ___No
 
 2. I copied, modified, re-wrote, or re-purposed source code that was not 
    originally written by me (in Python, Java, C++ or any other programming 
    language). See http://www.cs.toronto.edu/~kyros/courses/320/policy.html 
    for policy regarding uses of such pre-existing code
 
-   ___Yes   ___No
+   ___Yes   _X__No
       
    If you checked yes, please supply the following
    
@@ -36,7 +36,7 @@ A. PLEASE ANSWER THE FOLLOWING QUESTIONS (YOUR ASSIGNMENT WILL NOT BE MARKED
    See http://www.cs.toronto.edu/~kyros/courses/320/policy.html for
    policy on assignments done in collaboration
 
-   ___Yes   ___No
+   __X_Yes   ___No
 
    If you checked yes, please supply the following
 
@@ -56,13 +56,13 @@ B. PLACE AN (X) IN FRONT OF PORTIONS OF THE ASSIGNMENT THAT YOU COMPLETED IN
    YOUR PARTIAL IMPLEMENTATION, DETAILED COMMENTS IN YOUR CODE, ETC) THE MORE 
    LIKELY IT IS WE WILL BE ABLE TO MAKE AN ACCURATE ASSESSMENT
 
-___   ( 55 marks) Part 1.1    propagation_and_random_search_k() 
-___   ( 15 marks) Part 1.2    ___ (8 marks) NNF_matrix_to_NNF_heap
+__X_   ( 55 marks) Part 1.1    propagation_and_random_search_k()
+__X_   ( 15 marks) Part 1.2    ___ (8 marks) NNF_matrix_to_NNF_heap
 							  ___ (7 marks) NNF_heap_to_NNF_matrix
 
-___   ( 20 marks) Part 2	  nlm()
+__X_   ( 20 marks) Part 2	  nlm()
 
-___   ( 10 marks) Part 4      PDF report & evaluation
+_X__   ( 10 marks) Part 4      PDF report & evaluation
 
 
 ------------------------------------------------------------------------------ 

@@ -57,6 +57,7 @@ def profile(fn):
 # function run() in file run.py for an example of how it is called
 #
 #####################################################################
+
 # Constants and Helpers for modularity
 # Used when an operation is unsuccessful
 unsuccessful = "unsuccessful"
@@ -124,10 +125,8 @@ class PatchMatch:
     # leave the matting instance's dictionary entry unaffected and return
     # False, along with an error message
     def read_image(self, filename, key):
-
-        # Format the error message for future use
-        msg = "Opening {filename} was ".format(filename=filename) + \
-              "{status}"
+        success = False
+        msg = 'No Image Available'
 
         #########################################
         ## PLACE YOUR CODE BETWEEN THESE LINES ##
@@ -157,6 +156,7 @@ class PatchMatch:
             # file pointer
             self._images[key] = flt_img
 
+
         #########################################
         return success, msg
 
@@ -167,7 +167,6 @@ class PatchMatch:
     # The routine should return True if it succeeded. If it did not, it should
     # return False, along with an error message
     def write_image(self, filename, key):
-
         # Make the message template for future use
         msg = "Writing {key} to {filename} was".format(filename=filename,
                                                        key=key) + \
@@ -312,7 +311,6 @@ class PatchMatch:
                 ok, msg = self.write_image(self.make_filename('nlm', 'png', 0, not success), 'denoised')
                 if not ok:
                     print 'Error: write_image: ', msg
-
             self._f_k, _ = NNF_heap_to_NNF_matrix(self._f_heap)
             for order in range(0, self._k):
 

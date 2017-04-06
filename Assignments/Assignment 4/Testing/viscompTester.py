@@ -152,139 +152,121 @@ if __name__ == '__main__':
     # Dictionary of test names to their command strings
     test_dct = {
 
-        "Jag All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Jag"], "source.png"]),
-            make_path([imgs_to_paths["Jag"], "target.png"]),
-            make_path([output_path, "Jag All", "Jag All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3, k=5,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
         "Jag2 All": make_cmd_string(
             python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Jag2"], "source.png"]),
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 All", "Jag2 All"]),
+            k=3,
             dis_prop=False, dis_rand=False,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
-        "Jag3 All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Jag3"], "source.png"]),
-            make_path([imgs_to_paths["Jag3"], "target.png"]),
-            make_path([output_path, "Jag3 All", "Jag3 All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3, part_res=True,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Deer All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Deer"], "source.png"]),
-            make_path([imgs_to_paths["Deer"], "target.png"]),
-            make_path([output_path, "Deer All", "Deer All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Raptor All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Raptor"], "source.png"]),
-            make_path([imgs_to_paths["Raptor"], "target.png"]),
-            make_path([output_path, "Raptor All", "Raptor All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Stormtrooper All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Stormtrooper"], "source.png"]),
-            make_path([imgs_to_paths["Stormtrooper"], "target.png"]),
-            make_path([output_path, "Stormtrooper All", "Stormtrooper All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Doge All": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Doge"], "source.png"]),
-            make_path([imgs_to_paths["Doge"], "target.png"]),
-            make_path([output_path, "Doge All", "Doge All"]),
-            dis_prop=False, dis_rand=False,
-            iters=3,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Jag2 NoProp":make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Jag2"], "source.png"]),
-            make_path([imgs_to_paths["Jag2"], "target.png"]),
-            make_path([output_path, "Jag2 NoProp", "Jag2 NoProp"]),
-            dis_prop=True, dis_rand=False,
-            iters=9, k=4,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Jag2 NoRand": make_cmd_string(
-            python_path,
-            viscompPy_path,
-            make_path([imgs_to_paths["Jag2"], "source.png"]),
-            make_path([imgs_to_paths["Jag2"], "target.png"]),
-            make_path([output_path, "Jag2 NoRand", "Jag2 NoRand"]),
-            dis_prop=False, dis_rand=True,
-            k=5, iters=3,
-            nnf_img=True, nnf_vecs=True,
-            rec_src=True),
-
-        "Jag Denoising": make_cmd_string(
+        "Jag Denoising Control 0.5wk3ps7h25": make_cmd_string(
             python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Jag"], "source_noise.png"]),
             make_path([imgs_to_paths["Jag"], "source_noise.png"]),
-            make_path([output_path, "Jag Denoising", "Jag Denoising"]),
-            nlm=True, nlm_h=25,
-            k=4, iters=3,
+            make_path([output_path, "Jag Denoising Control 0.5wk3ps7h25", "Jag Denoising Control 0.5wk3ps7h25"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=3, iters=3, w=315,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
-        "My Denoising": make_cmd_string(
+        "Jag Denoising k6": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([output_path, "Jag Denoising k6", "Jag Denoising k6"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=6, iters=3, w=315,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Jag Denoising ps9h31": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([output_path, "Jag Denoising ps9h31", "Jag Denoising ps9h31"]),
+            nlm=True, nlm_h=31, patch_size=9,
+            k=3, iters=3, w=315,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Jag Denoising w": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([output_path, "Jag Denoising w", "Jag Denoising w"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=3, iters=3,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "My Denoising Control 0.5wk3ps7h25": make_cmd_string(
             python_path,
             viscompPy_path,
             make_path([imgs_to_paths["Mine"], "source_noise.png"]),
             make_path([imgs_to_paths["Mine"], "source_noise.png"]),
-            make_path([output_path, "Mine", "Mine"]),
-            nlm=True, nlm_h=25,
-            k=4, iters=3,
+            make_path([output_path, "My Denoising Control 0.5wk3ps7h25", "My Denoising Control 0.5wk3ps7h25"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=3, iters=3, w=200,
             nnf_img=True, nnf_vecs=True,
-            rec_src=True)
+            rec_src=True),
+
+        "My Denoising k6": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([output_path, "My Denoising k6", "My Denoising k6"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=6, iters=3, w=200,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "My Denoising ps9h31": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([output_path, "My Denoising ps9h31", "My Denoising ps9h31"]),
+            nlm=True, nlm_h=31, patch_size=9,
+            k=3, iters=3, w=200,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "My Denoising w": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([output_path, "My Denoising w", "My Denoising w"]),
+            nlm=True, nlm_h=25, patch_size=7,
+            k=3, iters=3,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
     }
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["My Denoising", "Jag2 All"]
+    okay_to_run = ["Jag2 All"]
 
     # Clear out the folders before putting stuff inside them
-    for folder in os.listdir(output_path):
-        for file in os.listdir(make_path([output_path, folder])):
-            os.remove(make_path([output_path, folder, file]))
+    # for folder in os.listdir(output_path):
+    #     for file in os.listdir(make_path([output_path, folder])):
+    #         os.remove(make_path([output_path, folder, file]))
 
-
-    for test in okay_to_run:
-        run_command(test_dct[test])
+    if okay_to_run != [True]:
+        for test in okay_to_run:
+            run_command(test_dct[test])
+    else:
+        for test in test_dct:
+            run_command(test_dct[test])
 
 
 
