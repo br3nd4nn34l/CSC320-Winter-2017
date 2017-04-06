@@ -88,7 +88,7 @@ def create_cmd_args(src, trg, out, # Image paths
     # Dictionary of actual tag names to input names:
     tag_name_dct = {"source":src, "target":trg, "output":out,
                     "k":k, "iters":iters, "patch-size":patch_size, "alpha":alpha, "w":w,
-                    "init-nnf":init_NNF,
+                    "init-nnf":init_NNF, "nlm":nlm, "nlm_h":nlm_h,
                     "disable-random":dis_rand, "disable-propagation":dis_prop,
                     "nnf-image":nnf_img, "partial-results":part_res, "nnf-vectors":nnf_vecs, "rec-source":rec_src,
                     "nnf-subsampling":nnf_ss, "nnf-line-width":nnf_lw, "nnf-line-color":nnf_lc,
@@ -107,9 +107,9 @@ def create_cmd_args(src, trg, out, # Image paths
 def create_associated_command(tag, value):
     if not value:
         return None
-    elif value == True:
+    elif value is True:
         ret_str = "--{tag}"
-    elif type(value) == str:
+    elif type(value) is str:
         ret_str = "--{tag} \"{val}\""
     elif type(value) in [int, float]:
         ret_str = "--{tag} {val}"
@@ -141,7 +141,8 @@ if __name__ == '__main__':
         "Jag3": make_path([testImgs_path, "jaguar3"]),
         "Raptor": make_path([testImgs_path, "raptor"]),
         "Stormtrooper": make_path([testImgs_path, "stormtrooper"]),
-        "Doge": make_path([testImgs_path, "doge"])
+        "Doge": make_path([testImgs_path, "doge"]),
+        "Mine":make_path([testImgs_path, "mine"])
     }
 
     # Path to output image folder
@@ -169,7 +170,6 @@ if __name__ == '__main__':
             make_path([imgs_to_paths["Jag2"], "target.png"]),
             make_path([output_path, "Jag2 All", "Jag2 All"]),
             dis_prop=False, dis_rand=False,
-            iters=3, k=5,
             nnf_img=True, nnf_vecs=True,
             rec_src=True),
 
@@ -248,12 +248,40 @@ if __name__ == '__main__':
             dis_prop=False, dis_rand=True,
             k=5, iters=3,
             nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "Jag Denoising": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([imgs_to_paths["Jag"], "source_noise.png"]),
+            make_path([output_path, "Jag Denoising", "Jag Denoising"]),
+            nlm=True, nlm_h=25,
+            k=4, iters=3,
+            nnf_img=True, nnf_vecs=True,
+            rec_src=True),
+
+        "My Denoising": make_cmd_string(
+            python_path,
+            viscompPy_path,
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([imgs_to_paths["Mine"], "source_noise.png"]),
+            make_path([output_path, "Mine", "Mine"]),
+            nlm=True, nlm_h=25,
+            k=4, iters=3,
+            nnf_img=True, nnf_vecs=True,
             rec_src=True)
     }
 
     # List of tests that are okay to run with the algorithm
     # (because some actually can overload RAM or take forever)
-    okay_to_run = ["Jag2 All"]
+    okay_to_run = ["My Denoising", "Jag2 All"]
+
+    # Clear out the folders before putting stuff inside them
+    for folder in os.listdir(output_path):
+        for file in os.listdir(make_path([output_path, folder])):
+            os.remove(make_path([output_path, folder, file]))
+
 
     for test in okay_to_run:
         run_command(test_dct[test])

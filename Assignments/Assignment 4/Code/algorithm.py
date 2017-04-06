@@ -38,7 +38,7 @@ from math import log
 priority, counter, displacement = 0, 1, 2
 
 
-# This is used to keep track of first availible id to us
+# This is used to keep track of first available id to us
 first_avail_id = 0
 
 # Returns an array of unique ids shaped like arr
@@ -83,6 +83,13 @@ def safe_lst_lookup(lst, inds):
     else:
         return None
 
+# Let arr.shape = (a1, ... an).
+# Returns arr but reshaped in shape (a1, ... n, 1)
+def dim_extend(arr):
+    new_shape = tuple(list(arr.shape) + [1])
+    return arr.reshape(new_shape)
+
+
 # Input:
 #   vect_arr: an array of NN vectors
 #   pos_arr: an array of the NN vector's respective positions
@@ -96,11 +103,21 @@ def in_vectors(vect_arr, pos_arr, rect):
 
     tgt = vect_arr + pos_arr
 
-    above_lbs = (tgt >= np.array([y_lb, x_lb])).min(axis=1)
+    # Flatten the target matrix such that the last dimension is length 2
+    # so they're easier to deal with
+    tgt_flattened = np.reshape(tgt, (-1, tgt.shape[-1]))
 
-    below_ubs = (tgt <= np.array([y_ub, x_ub])).min(axis=1)
+    # Check if elements are above the lower bounds for x and y
+    above_lbs = (tgt_flattened >= np.array([y_lb, x_lb])).min(axis=1)
 
-    return np.vstack((above_lbs, below_ubs)).min(axis=0)
+    # Check if the elements are below upper bounds for x and y
+    below_ubs = (tgt_flattened <= np.array([y_ub, x_ub])).min(axis=1)
+
+    # If elements are within both bounds
+    within_bounds = np.column_stack((above_lbs, below_ubs)).min(axis=1)
+
+    # Reshape so it's one bool per cell
+    return within_bounds.reshape(vect_arr.shape[:-1])
 
 # Input: some (2+)D-array
 # Output: np.array(d, l, u, r) = (
@@ -148,31 +165,11 @@ def reverse_zip(lst_of_tups):
 # Output:
 #   Clips a vector's components such that it points inside rect
 def snip_vectors(vect_arr, pos_arr, rect):
-
-    # Indicates which vectors need to be clipped
-    in_rect = in_vectors(vect_arr, pos_arr, rect)
-
     # Upper / Lower X and Y bounds
     y_lb, x_lb, y_ub, x_ub = edge_indices(rect)
 
-    # Getting unit vectors of each vector
-    mag_arr = (1.0 * (vect_arr ** 2)).sum(axis=1) ** 0.5
-    unit_arr = vect_arr / mag_arr[:, np.newaxis]
-
-    # T value for each unit vector to intersect
-    # with the closest rectangle side
-    T_vals = calculate_Ts(unit_arr, pos_arr, rect)
-
-    # All vectors snipped
-    snipped_vecs = unit_arr * T_vals[:, np.newaxis]
-
-    # Keep the vectors that point inside
-    snipped_vecs = np.where(in_rect[:, np.newaxis],
-                            vect_arr,
-                            snipped_vecs)
-
     # Coordinates of the target patches that the vectors point to
-    trg_cds = snipped_vecs + pos_arr
+    trg_cds = vect_arr + pos_arr
 
     # Clip the coordinates such that they're inside the rectangle
     clipped_cds = np.clip(trg_cds,
@@ -181,45 +178,6 @@ def snip_vectors(vect_arr, pos_arr, rect):
 
     # Convert back to an int vector
     return (clipped_cds - pos_arr).round().astype(int)
-
-
-def calculate_Ts(unit_vecs, pos_arr, rect):
-    # Splitting unit-vector into x, y components for clarity
-    unit_ys, unit_xs = split_yx(unit_vecs)
-    y_coords, x_coords = split_yx(pos_arr)
-
-    # Getting the coordinates of the rectangle's sides:
-    d, l, u, r = edge_indices(rect)
-
-    # Note: WLOG for x_k = A.x + T * unit(A -> B).x
-    # (where A is src coordinate, B is target coordinate):
-    # T = (x_k - A.x) / (unit(A -> B).x)
-
-    # T-values for Y
-    # To get the vectors to intersect with Y = d
-    T_ds = (d - y_coords) / unit_ys
-    # To get the vectors to intersect with Y = u
-    T_us = (u - y_coords) / unit_ys
-
-    # T-values for X
-    # To get the vectors to intersect with X = l
-    T_ls = (l - x_coords) / unit_xs
-    # To get the vectors to intersect with X = r
-    T_rs = (r - x_coords) / unit_xs
-
-    # Pick T_final = min(T_x, T_y) where:
-    #   T_x = (T_r if (unit.x > 0) else T_l)
-    #   T_y = (T_u if (unit.y > 0) else T_d)
-    T_xs, T_ys = np.zeros_like(T_ls), np.zeros_like(T_ds)
-    T_xs = np.where(unit_xs > 0, T_rs, T_xs)
-    T_xs = np.where(unit_xs < 0, T_ls, T_xs)
-    T_ys = np.where(unit_ys > 0, T_us, T_ys)
-    T_ys = np.where(unit_ys < 0, T_ds, T_ys)
-
-    T_finals = np.column_stack((T_xs, T_ys)).min(axis=1)
-
-    return T_finals
-
 
 # Returns the integer number of iterations needed
 # for w*alpha^i to decay to < 1:
@@ -337,12 +295,18 @@ def calculate_Ds(vector_arr, pos, src_patches, trg_patches):
     # Sum up the values across color channels and inside patches
     sum_sd_of_sels = np.sum(np.sum(sq_diff_of_sels, axis=1), axis=1)
 
-    return sum_sd_of_sels
+    return sum_sd_of_sels ** 0.5
 
 
 # Uses numpy to quickly calculate the D-values of an
-# entire NNF matrix
+# entire NNF matrix. Deals with OOB vectors by setting
+# the D-value to as high as possible.
 def multiple_D(nnf, src_patches, trg_patches):
+
+    # Need to check if vectors go outside the rectangle -
+    # in this case, bump the D-values up to as high as possible
+    out_vecs = np.negative(in_vectors(nnf, coords_of(nnf), nnf))
+
     # Matrix of the target points of the nnf
     trg_coords = nnf + coords_of(nnf)
 
@@ -362,8 +326,11 @@ def multiple_D(nnf, src_patches, trg_patches):
     sq_diff_sums = np.nansum(np.nansum(sq_diffs,
                                        axis=2), axis=2)
 
-    # Return sum
-    return sq_diff_sums
+    # Replace all out_vectors with a SSD of 255 ** 2 * window_size
+    sq_diff_sums[out_vecs] = (255 ** 2) * np.product(src_patches.shape[2:])
+
+    # Return root(SSDs)
+    return sq_diff_sums ** 0.5
 
 # Does propagation and random search for a pixel located at cur_pos
 def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
@@ -371,7 +338,6 @@ def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
                           f_heap, f_coord_dictionary,
                           alpha, w,
                           odd_iteration):
-
     if prop_enabled:
 
         # Offset if the iteration is even is Up, Left = [-1, -1]
@@ -414,6 +380,7 @@ def per_pixel_improvement(cur_pos, prop_enabled, random_enabled,
 def random_search(cur_pos, f_heap, f_coord_dictionary,
                   src_patches, trg_patches, alpha, w):
 
+    # Iterations needed to do random search
     iters = num_iters_needed(w, alpha)
 
     # Radii allowed for each i
@@ -424,7 +391,7 @@ def random_search(cur_pos, f_heap, f_coord_dictionary,
                                    high=[1,  1],
                                    size=(iters, 2))
     # R_i * (w * alpha^i) in the paper (array for each i)
-    rand_vecs = ri_vec_arr * radii_arr[:, np.newaxis]
+    rand_vecs = ri_vec_arr * dim_extend(radii_arr)
 
     # u_i in the paper (array for each i)
     ui_arr = cur_pos + rand_vecs
@@ -582,7 +549,7 @@ def NNF_matrix_to_NNF_heap(source_patches, target_patches, f_k):
     # Compute D-values for all vectors in the function
     # For-loops acceptable because k is assumed to be small,
     # majority of computation is done in numpy anyways
-    # Multipy D_matr by -1 to make the heap behave like a max-heap
+    # Multiply D_matr by -1 to make the heap behave like a max-heap
     D_matr = np.empty((f_k.shape[:3]))
     for i in range(k):
         D_matr[i] = -multiple_D(f_k[i],
@@ -711,6 +678,39 @@ def nlm(target, f_heap, h):
     ###  PLACE YOUR CODE BETWEEN THESE LINES  ###
     #############################################
 
+    # Getting the k-NNF and D-values (euc distance)
+    f_k, D_k = NNF_heap_to_NNF_matrix(f_heap)
+
+    # Rearrange so that the k-axis is third
+    f_k = f_k.swapaxes(0, 2).swapaxes(0, 1)
+    D_k = D_k.swapaxes(0, 2).swapaxes(0, 1)
+
+    # k in the paper
+    k = f_k.shape[2]
+
+    # exp(-D(i, j) / h^2) for every pixel i (j are KNNs)
+    exp_D_arr = np.exp(-D_k / (h ** 2))
+
+    # Z(i) for every pixel i
+    z_arr = exp_D_arr.sum(axis=-1)
+
+    # Calculate w(i, [1...k]) for every kNN vector
+    w_arr = exp_D_arr / dim_extend(z_arr)
+
+    # Re-arrange target pixels according to the vector matrix
+    trg_rearr_shape = tuple(list(D_k.shape) + [3])
+    trg_rearr = np.empty(trg_rearr_shape)
+    for i in range(k):
+        trg_rearr[..., i, :] = reconstruct_source_from_target(target, f_k[..., i, :])
+
+    # Multiply the weights by the pixels
+    weighted_pixels = trg_rearr * dim_extend(w_arr)
+
+    # Make the weighted sum (sum across k-axis)
+    summed_pixels = weighted_pixels.sum(axis=-2)
+
+    # Assign to correct pointer
+    denoised = summed_pixels
 
     #############################################
 
@@ -763,8 +763,7 @@ def reconstruct_source_from_target(target, f):
     # Vectors are assumed to be within bounds, but clip them for safety
     safe_cds = np.clip(tgt_cds,
                        [y_lb, x_lb],
-                       [y_ub, x_ub])
-    print safe_cds
+                       [y_ub, x_ub]).round().astype(int)
 
     # Look up pixels in target
     rec_source = lookup_values(target, safe_cds)
